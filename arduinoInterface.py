@@ -4,14 +4,10 @@ import serial
 Used to interface with the arduino
  - Provides methods to read, read a vector, write, write a string,
     calibrate dark current, and adjust a vector according to dark current
-    and the given scaleFactor
 """
 class Arduino (object):
-    def __init__(self,
-                port='COM3', baudrate=9600, timeout=5,
-                scaleFactor=10):
+    def __init__(self, port='COM3', baudrate=9600, timeout=5):
         self.ser = serial.Serial(port, baudrate, timeout=timeout)
-        self.scaleFactor = scaleFactor
         self.calibrate(0)
 
     """
@@ -28,6 +24,7 @@ class Arduino (object):
     # This assumes a 'v' was just read
     def readVector(self):
         vec = []
+
         # Keeps reading lines from the serial port until a 'v' is encountered
         while self.readSer() != 'v':
             continue
@@ -37,8 +34,8 @@ class Arduino (object):
         reading = self.readSer()
         while reading != 'e':
             try:
-                # Try reading a number from serial and converting it to a voltage
-                vec.append(5.0 * float(reading) / 1023.0)
+                # Try reading a number from serial
+                vec.append(float(reading))
             except ValueError:
                 # Use a zero if the reading is not a number
                 vec.append(0)
@@ -70,8 +67,15 @@ class Arduino (object):
     # Adjusts the input vector by the scale factor and dark average
     def adjustVec(self, vec):
         adjustedVec = []
+
+        # Subtracts dark current
         for i in range(len(vec)):
-            adjustedVec.append(self.scaleFactor * (vec[i]-self.darkAvg[i]))
+            adjustedVec.append(vec[i]-self.darkAvg[i])
+
+        # Normalizes such that the max voltage is a 1
+        maxVolt = max(adjustedVec)
+        for i in range(len(adjustedVec)):
+            adjustedVec[i] = adjustedVec[i] / maxVolt
 
         return adjustedVec
 

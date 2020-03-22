@@ -55,7 +55,7 @@ def plotMode(arduino, args):
     while True:
         if keyboard.is_pressed('esc'):
             return
-        vec = arduino.adjustVec(arduino.readVector())
+        vec = arduino.readAdjVector()
         updatePlot(im, vec)
 
 """Resets plot and returns handle"""
@@ -115,9 +115,9 @@ def addLabel(data, label):
 
 """Trains model based on premade data"""
 def trainModel():
-    Cdata = addLabel(np.load('Cdata.npy'), 'C')
-    Tdata = addLabel(np.load('Tdata.npy'), 'T')
-    Vdata = addLabel(np.load('Vdata.npy'), 'V')
+    Cdata = addLabel(loadData('Cdata.npy'), 'C')
+    Tdata = addLabel(loadData('Tdata.npy'), 'T')
+    Vdata = addLabel(loadData('Vdata.npy'), 'V')
 
     # combine the three hand positions and shuffle randomly
     data = np.concatenate([Cdata, Tdata, Vdata])
@@ -131,6 +131,17 @@ def trainModel():
     clf.fit(X, Y)
 
     return clf
+
+"""Loads data from the specified file and normalizes each vector"""
+def loadData(filename):
+    data = np.load(filename)
+    adjData = []
+    for vector in data:
+        maxVolt = max(vector)
+        adjVector = [volt / maxVolt for volt in vector]
+        adjData.append(adjVector)
+
+    return np.array(adjData)
 
 """
 Calibrates the dark current
